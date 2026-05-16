@@ -40,8 +40,17 @@ if (-not $git) {
 }
 if (-not $git) { throw 'git.exe not found. Install Git for Windows or add it to PATH.' }
 
-$SrcMain    = 'C:\Users\Administrator\iCloudDrive\iCloud~md~obsidian\Claude Code\Projects\TA-F\website\index.html'
+$SrcDir     = 'C:\Users\Administrator\iCloudDrive\iCloud~md~obsidian\Claude Code\Projects\TA-F\website'
 $SrcBlender = 'C:\Users\Administrator\iCloudDrive\iCloud~md~obsidian\Claude Code\Projects\TA-F\BLENDER-PLUGIN\website\index.html'
+
+# iCloud File Provider occasionally renames the canonical "index.html" to "index 2.html"
+# after conflicting writes. Resolve to whichever exists.
+$SrcMain = $null
+foreach ($name in @('index.html','index 2.html','index 3.html')) {
+  $candidate = Join-Path $SrcDir $name
+  if (Test-Path -LiteralPath $candidate) { $SrcMain = $candidate; break }
+}
+if (-not $SrcMain) { throw "No index*.html found under $SrcDir" }
 $Repo       = 'C:\Users\Administrator\projects\ta-f-toolkit'
 $LiveURL    = 'https://haner199022.github.io/ta-f-toolkit/'
 
