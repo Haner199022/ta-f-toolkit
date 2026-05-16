@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TA-F — Toolkit. Six instruments for the work after the work.</title>
+<meta name="description" content="TA-F toolkit: six small apps that remove repetition from the 3D / image / file pipeline. Blender, Cinema 4D, Photoshop, macOS, Windows. Offline-first. No subscriptions.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#ffffff;
+  --bg-soft:#fafafa;
+  --ink:#0a0a0a;
+  --ink-dim:#3d3d3d;
+  --ink-mute:#7a7a7a;
+  --rule:#0a0a0a;
+  --rule-soft:#e5e5e5;
+  --red:#0044ff;
+  --sans:"Inter Tight","Inter","Helvetica Neue","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --body:"Inter","Helvetica Neue","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  --mono:"IBM Plex Mono","JetBrains Mono","Menlo","PingFang SC",monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:15px;
+  line-height:1.5;
+  overflow-x:hidden;
+  font-feature-settings:"ss01","cv11";
+}
+::selection{background:var(--red);color:#fff}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+
+[data-en]{display:none}
+[data-zh]{display:initial}
+html[data-lang="en"] [data-en]{display:initial}
+html[data-lang="en"] [data-zh]{display:none}
+
+/* ---------- Layout ---------- */
+.shell{max-width:1320px;margin:0 auto;padding:0 40px}
+@media (max-width:720px){.shell{padding:0 20px}}
+
+/* ---------- Header ---------- */
+.site-header{
+  position:sticky;top:0;left:0;right:0;z-index:100;
+  background:var(--bg);
+  border-bottom:1px solid var(--rule);
+}
+.nav{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  height:56px;gap:24px;
+}
+.brand{
+  font-family:var(--mono);font-weight:600;
+  font-size:13px;letter-spacing:0.08em;text-transform:uppercase;
+  display:flex;align-items:center;gap:10px;
+}
+.brand .dot{
+  width:8px;height:8px;background:var(--red);display:inline-block;
+}
+.nav-links{
+  display:flex;gap:32px;justify-content:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--ink);font-weight:500;
+}
+.nav-links a{display:inline-flex;align-items:baseline;gap:6px}
+.nav-links a .idx{color:var(--ink-mute);font-size:10px}
+.nav-links a:hover{color:var(--red)}
+.nav-right{display:flex;justify-content:flex-end;align-items:center;gap:12px}
+.lang-toggle{
+  font-family:var(--mono);font-size:11px;
+  display:flex;gap:0;
+}
+.lang-toggle button{
+  padding:5px 10px;letter-spacing:0.08em;
+  color:var(--ink-mute);border:1px solid var(--rule-soft);
+  margin-left:-1px;
+}
+.lang-toggle button.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+@media (max-width:880px){
+  .nav{grid-template-columns:1fr auto}
+  .nav-links{display:none}
+}
+
+/* ---------- Section frame ---------- */
+section{padding:96px 0;position:relative}
+@media (max-width:720px){section{padding:64px 0}}
+
+.sec-head{
+  display:grid;grid-template-columns:80px 1fr auto;
+  align-items:baseline;gap:24px;
+  padding-bottom:24px;margin-bottom:48px;
+  border-bottom:1px solid var(--rule);
+}
+.sec-head .sec-num{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--red);font-weight:600;
+}
+.sec-head .sec-title{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.18em;
+  color:var(--ink);text-transform:uppercase;font-weight:600;
+}
+.sec-head .sec-meta{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;
+}
+@media (max-width:720px){
+  .sec-head{grid-template-columns:60px 1fr;gap:14px}
+  .sec-head .sec-meta{grid-column:1 / -1;margin-top:8px}
+}
+
+/* ---------- Hero ---------- */
+.hero{
+  padding-top:64px;padding-bottom:80px;
+  border-bottom:1px solid var(--rule);
+}
+.hero-tag{
+  display:grid;grid-template-columns:80px 1fr auto;
+  gap:24px;align-items:baseline;
+  padding-bottom:18px;margin-bottom:48px;
+  border-bottom:1px solid var(--rule-soft);
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  text-transform:uppercase;
+}
+.hero-tag .ht-num{color:var(--red);font-weight:600}
+.hero-tag .ht-mid{color:var(--ink);font-weight:500}
+.hero-tag .ht-right{color:var(--ink-mute)}
+
+.hero h1{
+  font-family:var(--sans);font-weight:700;
+  font-size:clamp(3.6rem,12.5vw,11rem);
+  line-height:0.88;letter-spacing:-0.045em;
+  text-transform:uppercase;
+}
+.hero h1 .accent{color:var(--red)}
+.hero h1 .lf{display:block}
+
+.hero-grid{
+  display:grid;grid-template-columns:80px 1fr 1fr;
+  gap:24px;margin-top:64px;
+  padding-top:32px;border-top:1px solid var(--rule);
+}
+@media (max-width:880px){
+  .hero-grid{grid-template-columns:60px 1fr;gap:16px}
+  .hero-grid .col-skip{display:none}
+}
+.hero-grid .label{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;font-weight:600;
+}
+.hero-grid .lead{
+  font-size:18px;line-height:1.5;color:var(--ink);font-weight:400;
+}
+.hero-grid .lead strong{font-weight:600}
+.hero-grid .body{
+  font-size:14px;line-height:1.6;color:var(--ink-dim);
+}
+
+.hero-ctas{
+  margin-top:48px;display:grid;
+  grid-template-columns:80px repeat(2,1fr);gap:0;
+  border-top:1px solid var(--rule);
+}
+@media (max-width:880px){
+  .hero-ctas{grid-template-columns:60px 1fr}
+}
+.hero-ctas .label{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;font-weight:600;
+  padding:24px 0;
+}
+.cta{
+  padding:24px 24px 24px 0;border-right:1px solid var(--rule-soft);
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:24px;transition:color 0.18s,background 0.18s;
+}
+.cta:last-child{border-right:0}
+@media (max-width:880px){
+  .cta{border-right:0;border-bottom:1px solid var(--rule-soft);padding:20px 0}
+  .cta:last-child{border-bottom:0}
+}
+.cta .cta-label{
+  font-family:var(--sans);font-weight:700;font-size:24px;
+  letter-spacing:-0.02em;text-transform:uppercase;
+}
+.cta .cta-arrow{
+  font-family:var(--mono);font-size:14px;color:var(--ink-mute);
+  transition:transform 0.18s,color 0.18s;
+}
+.cta:hover .cta-label{color:var(--red)}
+.cta:hover .cta-arrow{color:var(--red);transform:translateX(4px)}
+
+/* ---------- Stats bar ---------- */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-top:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  background:var(--bg-soft);
+}
+.stats-bar .stat{
+  padding:28px 28px;border-right:1px solid var(--rule-soft);
+  display:flex;flex-direction:column;gap:8px;
+}
+.stats-bar .stat:last-child{border-right:0}
+.stats-bar .num{
+  font-family:var(--sans);font-size:48px;font-weight:700;
+  letter-spacing:-0.04em;line-height:1;
+}
+.stats-bar .lab{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  text-transform:uppercase;color:var(--ink-mute);font-weight:500;
+}
+@media (max-width:880px){
+  .stats-bar{grid-template-columns:repeat(2,1fr)}
+  .stats-bar .stat{padding:20px 16px}
+  .stats-bar .num{font-size:36px}
+}
+
+/* ---------- Products grid ---------- */
+.product-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  border-top:1px solid var(--rule);
+  border-left:1px solid var(--rule);
+}
+@media (max-width:880px){.product-grid{grid-template-columns:1fr}}
+
+.product{
+  padding:32px;
+  border-right:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  background:var(--bg);
+  position:relative;
+  display:flex;flex-direction:column;
+  transition:background 0.18s;
+}
+.product:hover{background:var(--bg-soft)}
+.product:hover .p-index{color:var(--red)}
+
+.p-head{
+  display:grid;grid-template-columns:auto 1fr auto;
+  align-items:baseline;gap:18px;
+  padding-bottom:14px;margin-bottom:22px;
+  border-bottom:1px solid var(--rule);
+}
+.p-index{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  font-weight:600;color:var(--ink);
+  transition:color 0.18s;
+}
+.p-host{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;
+  text-align:right;
+}
+.p-version{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;font-weight:500;
+}
+.p-vbox{
+  display:flex;align-items:center;gap:6px;
+}
+.p-vbox .dot{
+  width:6px;height:6px;background:var(--red);display:inline-block;
+}
+
+.p-name{
+  font-family:var(--sans);font-weight:700;
+  font-size:clamp(2rem,3vw,2.6rem);
+  letter-spacing:-0.025em;line-height:1;
+  text-transform:uppercase;
+  margin-bottom:8px;
+}
+.p-codename{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.16em;
+  color:var(--ink-mute);text-transform:uppercase;margin-bottom:22px;
+}
+
+.p-tagline{
+  font-size:15px;line-height:1.55;color:var(--ink-dim);
+  margin-bottom:22px;
+  padding-bottom:22px;border-bottom:1px solid var(--rule-soft);
+}
+
+.p-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px}
+.chip{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.1em;
+  color:var(--ink);text-transform:uppercase;font-weight:500;
+  padding:4px 9px;border:1px solid var(--rule);
+}
+.chip.solid{background:var(--ink);color:var(--bg)}
+.chip.red{background:var(--red);color:#fff;border-color:var(--red)}
+
+.p-features{
+  list-style:none;margin-bottom:28px;
+  font-family:var(--body);
+  counter-reset:fitem;
+}
+.p-features li{
+  font-size:13.5px;line-height:1.5;color:var(--ink-dim);
+  padding:8px 0 8px 32px;border-top:1px solid var(--rule-soft);
+  position:relative;counter-increment:fitem;
+}
+.p-features li:last-child{border-bottom:1px solid var(--rule-soft)}
+.p-features li::before{
+  content:counter(fitem,decimal-leading-zero);
+  position:absolute;left:0;top:8px;
+  font-family:var(--mono);font-size:10px;
+  letter-spacing:0.14em;color:var(--ink-mute);font-weight:500;
+}
+
+.p-foot{
+  margin-top:auto;display:grid;
+  grid-template-columns:1fr 1fr;gap:0;
+  border-top:1px solid var(--rule);
+}
+.p-btn{
+  padding:18px 0;display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  text-transform:uppercase;font-weight:600;
+  border-right:1px solid var(--rule-soft);padding-right:14px;
+  transition:color 0.18s,background 0.18s;
+}
+.p-btn:last-child{border-right:0;padding-right:0;padding-left:14px}
+.p-btn.primary{color:var(--ink)}
+.p-btn.primary .marker{color:var(--red);font-size:9px}
+.p-btn.primary:hover{color:var(--red)}
+.p-btn.ghost{color:var(--ink-mute)}
+.p-btn.ghost:hover{color:var(--ink)}
+.p-btn .arrow{transition:transform 0.18s}
+.p-btn:hover .arrow{transform:translateX(3px)}
+
+/* ---------- About / principles ---------- */
+.about{border-bottom:1px solid var(--rule)}
+.about-grid{
+  display:grid;grid-template-columns:80px 1fr 1fr;
+  gap:24px;align-items:start;
+}
+@media (max-width:880px){
+  .about-grid{grid-template-columns:60px 1fr;gap:16px}
+  .about-grid .col-skip{display:none}
+}
+.about-quote{
+  font-family:var(--sans);font-weight:700;
+  font-size:clamp(2rem,4.5vw,3.6rem);
+  line-height:1;letter-spacing:-0.035em;
+  text-transform:uppercase;
+}
+.about-quote .accent{color:var(--red)}
+.about-body{
+  font-size:15px;line-height:1.65;color:var(--ink-dim);
+}
+.about-body p+p{margin-top:16px}
+.about-body strong{color:var(--ink);font-weight:600}
+
+.principles{
+  margin-top:64px;
+  display:grid;grid-template-columns:repeat(4,1fr);
+  border-top:1px solid var(--rule);
+  border-left:1px solid var(--rule);
+}
+@media (max-width:880px){.principles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.principles{grid-template-columns:1fr}}
+.principle{
+  padding:28px;
+  border-right:1px solid var(--rule);
+  border-bottom:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:10px;
+  min-height:180px;
+}
+.principle .p-num{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  color:var(--red);font-weight:600;
+}
+.principle .p-title{
+  font-family:var(--sans);font-weight:700;font-size:18px;
+  text-transform:uppercase;letter-spacing:-0.01em;line-height:1.15;
+}
+.principle .p-body{font-size:13.5px;color:var(--ink-dim);line-height:1.55;margin-top:auto}
+
+/* ---------- Footer ---------- */
+.site-footer{padding:48px 0 28px;background:var(--bg)}
+.footer-grid{
+  display:grid;grid-template-columns:80px 1fr auto;gap:24px;
+  align-items:flex-start;
+  padding-bottom:28px;border-bottom:1px solid var(--rule-soft);
+}
+@media (max-width:880px){
+  .footer-grid{grid-template-columns:60px 1fr}
+  .footer-grid .col-skip{display:none}
+}
+.footer-grid .label{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;font-weight:600;
+}
+.footer-brand{
+  font-family:var(--sans);font-weight:700;font-size:36px;
+  letter-spacing:-0.03em;text-transform:uppercase;line-height:1;
+}
+.footer-tag{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+  color:var(--ink-mute);margin-top:10px;line-height:1.55;max-width:360px;
+}
+.footer-links{
+  display:flex;flex-direction:column;gap:8px;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.12em;
+  text-transform:uppercase;text-align:right;
+}
+.footer-links a{color:var(--ink-dim)}
+.footer-links a:hover{color:var(--red)}
+.footer-meta{
+  margin-top:20px;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.14em;
+  color:var(--ink-mute);text-transform:uppercase;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+
+/* ---------- Bottom rule ---------- */
+.end-rule{height:8px;background:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="shell nav">
+    <a href="#top" class="brand"><span class="dot"></span> TA-F&nbsp;/&nbsp;TOOLKIT</a>
+    <nav class="nav-links">
+      <a href="#products"><span class="idx">01</span>
+        <span data-zh>产品</span><span data-en>Products</span></a>
+      <a href="#about"><span class="idx">02</span>
+        <span data-zh>关于</span><span data-en>About</span></a>
+      <a href="#contact"><span class="idx">03</span>
+        <span data-zh>联系</span><span data-en>Contact</span></a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-lang-btn="zh" class="active">中</button>
+        <button data-lang-btn="en">EN</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<a id="top"></a>
+
+<!-- ============== Hero ============== -->
+<section class="hero">
+  <div class="shell">
+    <div class="hero-tag">
+      <span class="ht-num">N° 06 / 2026</span>
+      <span class="ht-mid" data-zh>TA-F · 工具集 · 春</span>
+      <span class="ht-mid" data-en>TA-F · Toolkit · Spring</span>
+      <span class="ht-right" data-zh>六款应用 · 离线优先 · 开源</span>
+      <span class="ht-right" data-en>Six apps · offline first · open source</span>
+    </div>
+
+    <h1>
+      <span data-zh>
+        <span class="lf">六款工具，</span>
+        <span class="lf">为<span class="accent">工作之</span><span class="accent">后</span></span>
+        <span class="lf">的工作而做。</span>
+      </span>
+      <span data-en>
+        <span class="lf">Six tools,</span>
+        <span class="lf">for the work <span class="accent">after</span></span>
+        <span class="lf">the <span class="accent">work</span>.</span>
+      </span>
+    </h1>
+
+    <div class="hero-grid">
+      <div class="label">01 — Lead</div>
+      <p class="lead">
+        <span data-zh>TA-F 是一支创作团队，自己写、自己用、顺手开源的<strong>小型软件工具集</strong>。覆盖 3D 建模、贴图烘焙、PSD 批改、合同抽数、文件归档。</span>
+        <span data-en>TA-F is a creative team. These are the <strong>small in-house tools</strong> we built for ourselves and decided to ship. They cover 3D modeling, texture baking, PSD batches, contract extraction, file archiving.</span>
+      </p>
+      <p class="body">
+        <span data-zh>每款应用都为团队里反复出现的某件机械操作而生。下载即用，不订阅，不上传文件，不收数据。</span>
+        <span data-en>Each app was built to kill one specific piece of repetitive work in our pipeline. Download and go. No subscriptions, no file uploads, no telemetry.</span>
+      </p>
+    </div>
+
+    <div class="hero-ctas">
+      <span class="label">02 — Index</span>
+      <a href="#products" class="cta">
+        <span class="cta-label" data-zh>查看 06 款产品</span>
+        <span class="cta-label" data-en>View 06 products</span>
+        <span class="cta-arrow">↓</span>
+      </a>
+      <a href="#about" class="cta">
+        <span class="cta-label" data-zh>关于 TA-F</span>
+        <span class="cta-label" data-en>About TA-F</span>
+        <span class="cta-arrow">→</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============== Stats ============== -->
+<div class="shell">
+  <div class="stats-bar">
+    <div class="stat"><div class="num">06</div><div class="lab" data-zh>已发布应用</div><div class="lab" data-en>Apps shipping</div></div>
+    <div class="stat"><div class="num">05</div><div class="lab" data-zh>覆盖宿主</div><div class="lab" data-en>Host platforms</div></div>
+    <div class="stat"><div class="num">02</div><div class="lab" data-zh>支持系统</div><div class="lab" data-en>Operating systems</div></div>
+    <div class="stat"><div class="num">00</div><div class="lab" data-zh>云端依赖</div><div class="lab" data-en>Cloud dependencies</div></div>
+  </div>
+</div>
+
+<!-- ============== Products ============== -->
+<section id="products">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="sec-num">01 / 03</span>
+      <span class="sec-title" data-zh>产品 — Products</span>
+      <span class="sec-title" data-en>Products</span>
+      <span class="sec-meta" data-zh>六款 · 下载与文档</span>
+      <span class="sec-meta" data-en>Six items · Download &amp; docs</span>
+    </div>
+
+    <div class="product-grid">
+
+      <!-- 01 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">01 / 06</span>
+          <span class="p-host">BLENDER · ADD-ON</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v0.1.0 DEV</span></span>
+        </header>
+        <h3 class="p-name">Ai Mesh Maker</h3>
+        <div class="p-codename">BLENDER-PLUGIN</div>
+        <p class="p-tagline">
+          <span data-zh>在 Blender 内输入一句话，30 秒生成可编辑 3D 网格。Tripo3D + 腾讯混元 3D，不切软件、不导文件。</span>
+          <span data-en>Type a sentence inside Blender, get an editable mesh in 30 seconds. Tripo3D + Tencent Hunyuan 3D — in-viewport, no exports.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">Blender 4.0+</span>
+          <span class="chip">macOS</span>
+          <span class="chip">Windows</span>
+          <span class="chip">Linux</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>侧边栏面板 · 中文 UI · 提示词模板库</li><li data-en>Sidebar panel · prompt template library</li>
+          <li data-zh>异步任务 + 进度条 + 错误隔离</li><li data-en>Async job queue · progress · error isolation</li>
+          <li data-zh>输出 .glb 直接进场景，可二次编辑</li><li data-en>Outputs .glb straight into scene, fully editable</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/ai-mesh-maker/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载</span><span data-en>Download</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="./blender-plugin/" class="p-btn ghost">
+            <span data-zh>产品主页</span><span data-en>Product page</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- 02 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">02 / 06</span>
+          <span class="p-host">STANDALONE · GUI + CLI</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v1.0.0</span></span>
+        </header>
+        <h3 class="p-name">BumpToNormal Pro</h3>
+        <div class="p-codename">PS-B-N</div>
+        <p class="p-tagline">
+          <span data-zh>高度图 / 凹凸图一键转法线贴图。纯 NumPy 实现，8K 图 3 秒出图，自带 3D 球体实时预览。</span>
+          <span data-en>Convert height &amp; bump maps to normal maps in one click. Pure NumPy, 8K in ~3 s, live 3D sphere preview.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">Windows 10/11</span>
+          <span class="chip">GUI</span>
+          <span class="chip">CLI</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>Sobel 3×3 / 5×5 / Scharr 三种核 · 强度 0.1–20</li><li data-en>Sobel 3×3 / 5×5 / Scharr · strength 0.1–20</li>
+          <li data-zh>8-bit PNG &amp; 16-bit TIFF · DX/OGL · 接缝平铺</li><li data-en>8-bit PNG &amp; 16-bit TIFF · DX/OGL · seamless tiling</li>
+          <li data-zh>批量模式 + CLI + Inno Setup 单文件安装器</li><li data-en>Batch mode + CLI + single-exe Inno Setup installer</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/bumptonormal-pro/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载安装器</span><span data-en>Download installer</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="https://github.com/ta-f-tools/bumptonormal-pro" class="p-btn ghost">
+            <span data-zh>源码</span><span data-en>Source</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- 03 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">03 / 06</span>
+          <span class="p-host">PHOTOSHOP · DRIVER</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v1.4.1</span></span>
+        </header>
+        <h3 class="p-name">PSD DiffBatch</h3>
+        <div class="p-codename">PS-BATCH</div>
+        <p class="p-tagline">
+          <span data-zh>用一份"参考 PSD"批量校准整组源文件——图层、画布、文字、智能对象统统对齐。还能批跑任意 .jsx 脚本。</span>
+          <span data-en>Normalize a folder of PSDs against a reference — layers, canvas, type, smart objects, all aligned. Plus a queue for arbitrary .jsx scripts.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">Photoshop</span>
+          <span class="chip">macOS</span>
+          <span class="chip">Windows</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>Analyze 先比对差异，Run 再执行——原文件不改</li><li data-en>Analyze diff first, then run — originals never touched</li>
+          <li data-zh>Script Runner 标签：拖多个 .jsx 进队列，按序批跑</li><li data-en>Script Runner tab — queue multiple .jsx files, run in order</li>
+          <li data-zh>Mac AppleScript + Win COM 两套底层，UI 一致</li><li data-en>AppleScript on macOS + COM on Windows, single UI</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/psd-diffbatch/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载安装器</span><span data-en>Download installer</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="https://github.com/ta-f-tools/psd-diffbatch" class="p-btn ghost">
+            <span data-zh>源码</span><span data-en>Source</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- 04 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">04 / 06</span>
+          <span class="p-host">DESKTOP · STDLIB</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v1.5.1</span></span>
+        </header>
+        <h3 class="p-name">File Manager</h3>
+        <div class="p-codename">FILE-MANAGER</div>
+        <p class="p-tagline">
+          <span data-zh>从 Excel 抽产品名，按命名模板一键建归档目录树；建完之后扫一遍，看每个文件夹的素材是否齐。</span>
+          <span data-en>Read product names from Excel, build an archive folder tree by template, then audit which folders are still empty.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">macOS</span>
+          <span class="chip solid">Windows</span>
+          <span class="chip red" data-zh>零依赖</span>
+          <span class="chip red" data-en>No deps</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>命名模板 token：{product} / {index:03d} / {date} / {sheet}</li><li data-en>Naming tokens: {product} / {index:03d} / {date} / {sheet}</li>
+          <li data-zh>扫描矩阵：行=产品，列=子目录，单元格 ✓N / · / ?</li><li data-en>Audit matrix · rows=products · cols=subdirs · ✓N / · / ?</li>
+          <li data-zh>纯 stdlib——无第三方库、无安装包麻烦</li><li data-en>Pure stdlib — no third-party packages</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/file-manager/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载</span><span data-en>Download</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="https://github.com/ta-f-tools/file-manager" class="p-btn ghost">
+            <span data-zh>源码</span><span data-en>Source</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- 05 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">05 / 06</span>
+          <span class="p-host">DESKTOP · LOCAL OCR</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v1.1</span></span>
+        </header>
+        <h3 class="p-name">Contract to Excel</h3>
+        <div class="p-codename">CONTRACT-TO-EXCEL</div>
+        <p class="p-tagline">
+          <span data-zh>把一堆合同 PDF 丢进去，自动抽出项目名、起止时间、金额、乙方信息，输出 Excel 汇总。支持扫描件（本地 OCR）。</span>
+          <span data-en>Drop in a folder of contract PDFs — get an Excel summary with project name, dates, amount, vendor info. Scanned PDFs handled by local OCR.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">macOS</span>
+          <span class="chip solid">Windows</span>
+          <span class="chip red">Local OCR</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>内置 Tesseract chi_sim + eng，无需预装任何东西</li><li data-en>Bundles Tesseract chi_sim + eng — nothing to pre-install</li>
+          <li data-zh>数字优先策略——容忍 OCR 把 ¥ 识别成"兰"</li><li data-en>Number-first strategy — tolerates OCR mistaking ¥ for "兰"</li>
+          <li data-zh>单文件失败不中断整批，错误聚合到日志</li><li data-en>Single-file failure doesn't kill the batch; errors logged</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/contract-to-excel/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载</span><span data-en>Download</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="https://github.com/ta-f-tools/contract-to-excel" class="p-btn ghost">
+            <span data-zh>源码</span><span data-en>Source</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+      <!-- 06 -->
+      <article class="product">
+        <header class="p-head">
+          <span class="p-index">06 / 06</span>
+          <span class="p-host">CINEMA 4D · SCRIPT</span>
+          <span class="p-vbox"><span class="dot"></span><span class="p-version">v1.0</span></span>
+        </header>
+        <h3 class="p-name">C4D Batch Render Takes</h3>
+        <div class="p-codename">C4D-PLUGIN</div>
+        <p class="p-tagline">
+          <span data-zh>批量把一个文件夹下所有 .c4d 文件的"二级场次"加进 Render Queue。副本与源文件同目录，相对路径贴图不丢。</span>
+          <span data-en>Bulk-add every level-2 Take from every .c4d under a folder into the Render Queue. Copies stay next to sources so relative texture paths still resolve.</span>
+        </p>
+        <div class="p-chips">
+          <span class="chip solid">Cinema 4D</span>
+          <span class="chip">Python</span>
+          <span class="chip red">Free</span>
+        </div>
+        <ul class="p-features">
+          <li data-zh>递归扫描整个文件夹，自动展开每文件 × 每场次</li><li data-en>Recursive folder scan · expands file × take automatically</li>
+          <li data-zh>CLEANUP_MODE 一键清理临时副本</li><li data-en>CLEANUP_MODE flips the same script into a tidy-up pass</li>
+          <li data-zh>单文件粘进 Script Manager 即用，零安装</li><li data-en>Paste into Script Manager and go — no installation</li>
+        </ul>
+        <div class="p-foot">
+          <a href="https://github.com/ta-f-tools/c4d-batch-render-takes/releases/latest" class="p-btn primary">
+            <span><span class="marker">●</span> <span data-zh>下载 .py</span><span data-en>Download .py</span></span>
+            <span class="arrow">↓</span>
+          </a>
+          <a href="https://github.com/ta-f-tools/c4d-batch-render-takes" class="p-btn ghost">
+            <span data-zh>源码</span><span data-en>Source</span>
+            <span class="arrow">→</span>
+          </a>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============== About ============== -->
+<section class="about" id="about">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="sec-num">02 / 03</span>
+      <span class="sec-title" data-zh>关于 — About</span>
+      <span class="sec-title" data-en>About</span>
+      <span class="sec-meta" data-zh>立场与原则</span>
+      <span class="sec-meta" data-en>Stance &amp; principles</span>
+    </div>
+
+    <div class="about-grid">
+      <div class="label" style="font-family:var(--mono);font-size:11px;letter-spacing:0.14em;color:var(--ink-mute);text-transform:uppercase;font-weight:600;">— 01</div>
+      <h2 class="about-quote">
+        <span data-zh>团队<span class="accent">自用</span>的工具，<br>顺手分享。</span>
+        <span data-en>Tools we built <span class="accent">for ourselves</span>, made for fellow makers.</span>
+      </h2>
+      <div class="about-body">
+        <p data-zh>TA-F 不是软件公司，是一支创作团队。我们每天在 Blender、Cinema 4D、Photoshop 里跟图层、网格、贴图打交道——也跟<strong>合同 PDF、归档文件夹、PSD 批改</strong>这些不那么"创作"的杂事打交道。</p>
+        <p data-en>TA-F isn't a software company — we're a creative team. Day-to-day we work in Blender, Cinema 4D, and Photoshop. We also wrestle with the less glamorous bits: <strong>contract PDFs, archive folders, PSD cleanups</strong>.</p>
+        <p data-zh>这些工具最初都是为某次"做了三遍还得做第四遍"的痛点写的脚本，后来慢慢长出了 UI、安装器、说明书。我们用了一段时间，觉得稳了，就放上来给同行用。</p>
+        <p data-en>Each app started as a script for a specific "I've done this three times and I'm about to do it again" moment. Over time they grew UIs, installers, docs. Once they felt stable in our own pipeline, we put them out for fellow makers.</p>
+        <p data-zh><strong>没有订阅、不做账号、不上传文件、不收数据。</strong>下载、双击、用完关掉。</p>
+        <p data-en><strong>No subscriptions, no accounts, no file uploads, no telemetry.</strong> Download, double-click, close when done.</p>
+      </div>
+    </div>
+
+    <div class="principles">
+      <div class="principle">
+        <div class="p-num">01</div>
+        <h4 class="p-title" data-zh>一件事 / 做到底</h4><h4 class="p-title" data-en>One job / done thoroughly</h4>
+        <p class="p-body" data-zh>每款应用只攻一个真实痛点。宁愿少做功能，也不让用户翻文档找开关。</p>
+        <p class="p-body" data-en>One real pain point per app. We'd rather ship fewer features than make you hunt through docs for a toggle.</p>
+      </div>
+      <div class="principle">
+        <div class="p-num">02</div>
+        <h4 class="p-title" data-zh>本地 / 优先</h4><h4 class="p-title" data-en>Local / first</h4>
+        <p class="p-body" data-zh>除 AI 3D 生成调云端 API 外，其余工具一律在你机器上跑完。文件不上传，不留痕。</p>
+        <p class="p-body" data-en>Apart from AI mesh generation, everything runs on your machine. Files don't leave, traces don't stay.</p>
+      </div>
+      <div class="principle">
+        <div class="p-num">03</div>
+        <h4 class="p-title" data-zh>开箱 / 即用</h4><h4 class="p-title" data-en>Open the box / ready</h4>
+        <p class="p-body" data-zh>Win 给安装器、Mac 给 .app、Blender 给 zip、C4D 给单文件 .py。我们替你处理依赖。</p>
+        <p class="p-body" data-en>Installers for Windows, .app for macOS, zip for Blender, single-file .py for C4D. We handle dependencies.</p>
+      </div>
+      <div class="principle">
+        <div class="p-num">04</div>
+        <h4 class="p-title" data-zh>可读 / 可改</h4><h4 class="p-title" data-en>Readable / hackable</h4>
+        <p class="p-body" data-zh>源码全部开放。想加字段、改命名规则，clone 下来改即可——无混淆、无壁垒。</p>
+        <p class="p-body" data-en>Source is open. Want to add a field or change a naming rule? Clone and edit — no obfuscation, no gatekeeping.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== Footer ============== -->
+<footer class="site-footer" id="contact">
+  <div class="shell">
+    <div class="sec-head">
+      <span class="sec-num">03 / 03</span>
+      <span class="sec-title" data-zh>联系 — Contact</span>
+      <span class="sec-title" data-en>Contact</span>
+      <span class="sec-meta">hi@ta-f.tools</span>
+    </div>
+
+    <div class="footer-grid">
+      <div class="label">— 01</div>
+      <div>
+        <div class="footer-brand">TA-F<br>TOOLKIT</div>
+        <p class="footer-tag" data-zh>给创作者的内功工具集 · 自用 · 开源 · 离线优先</p>
+        <p class="footer-tag" data-en>An in-house toolkit for creators · self-built · open · offline-first</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/ta-f-tools">→ GitHub</a>
+        <a href="#products" data-zh>→ 产品</a><a href="#products" data-en>→ Products</a>
+        <a href="#about" data-zh>→ 关于</a><a href="#about" data-en>→ About</a>
+        <a href="mailto:hi@ta-f.tools">→ Email</a>
+      </div>
+    </div>
+    <div class="footer-meta">
+      <span>© 2026 TA-F</span>
+      <span data-zh>最后更新 · 2026.05.16</span><span data-en>Last updated · 2026.05.16</span>
+      <span data-zh>构建 · Obsidian + Claude Code</span><span data-en>Built · Obsidian + Claude Code</span>
+    </div>
+  </div>
+</footer>
+
+<div class="end-rule"></div>
+
+<script>
+(function(){
+  const html = document.documentElement;
+  const btns = document.querySelectorAll('[data-lang-btn]');
+  function setLang(lang){
+    html.setAttribute('data-lang', lang);
+    btns.forEach(b => b.classList.toggle('active', b.dataset.langBtn === lang));
+    try{ localStorage.setItem('ta-f-lang', lang); }catch(e){}
+  }
+  btns.forEach(b => b.addEventListener('click', () => setLang(b.dataset.langBtn)));
+  try{
+    const saved = localStorage.getItem('ta-f-lang');
+    if(saved === 'en' || saved === 'zh') setLang(saved);
+  }catch(e){}
+})();
+</script>
+
+</body>
+</html>

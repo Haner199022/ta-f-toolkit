@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Mesh Maker — Text becomes mesh, inside Blender</title>
+<meta name="description" content="A Blender 4.0+ add-on that turns text prompts into production-ready 3D meshes. Powered by Tripo3D, with optional Tencent Hunyuan 3D support.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,200..900,0..100;1,9..144,200..900,0..100&family=Geist:wght@300..700&family=Geist+Mono:wght@300..700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0b0c;
+  --bg-soft:#141417;
+  --bg-card:#16161a;
+  --hairline:#26262b;
+  --hairline-soft:#1c1c20;
+  --text:#efe7d8;
+  --text-dim:#9c9587;
+  --text-mute:#5e584d;
+  --orange:#ff6a1a;
+  --orange-soft:#ffb088;
+  --mint:#b9ff66;
+  --serif:"Fraunces","Songti SC","STSong","Source Han Serif SC",serif;
+  --sans:"Geist","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  --mono:"Geist Mono","JetBrains Mono","PingFang SC","Menlo",monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:16px;
+  line-height:1.55;
+  font-feature-settings:"ss01","cv11","cv02";
+  overflow-x:hidden;
+}
+::selection{background:var(--orange);color:#0b0b0c}
+
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+img,svg{display:block;max-width:100%}
+
+/* ---------- Layout ---------- */
+.shell{max-width:1440px;margin:0 auto;padding:0 32px}
+@media (max-width:720px){.shell{padding:0 20px}}
+
+/* ---------- Header ---------- */
+.site-header{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  border-bottom:1px solid var(--hairline-soft);
+  background:rgba(11,11,12,0.78);
+  backdrop-filter:saturate(140%) blur(18px);
+  -webkit-backdrop-filter:saturate(140%) blur(18px);
+}
+.nav{
+  display:flex;align-items:center;justify-content:space-between;
+  height:64px;
+}
+.brand{
+  display:flex;align-items:baseline;gap:10px;
+  font-family:var(--serif);font-weight:600;letter-spacing:-0.01em;
+  font-size:20px;
+}
+.brand .mark{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  color:var(--orange);letter-spacing:0.18em;
+  padding:3px 7px;border:1px solid var(--orange);border-radius:2px;
+  text-transform:uppercase;line-height:1;
+  align-self:center;
+}
+.nav-links{display:flex;gap:32px;font-family:var(--mono);font-size:12px;letter-spacing:0.04em;color:var(--text-dim)}
+.nav-links a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:18px}
+.lang-toggle{
+  font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  display:flex;border:1px solid var(--hairline);border-radius:2px;
+  overflow:hidden;
+}
+.lang-toggle button{padding:6px 10px;letter-spacing:0.06em}
+.lang-toggle button.active{background:var(--text);color:var(--bg)}
+.cta-mini{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.08em;
+  padding:8px 14px;background:var(--orange);color:#0b0b0c;
+  border-radius:2px;text-transform:uppercase;font-weight:600;
+  transition:transform 0.18s ease;
+}
+.cta-mini:hover{transform:translateY(-1px)}
+@media (max-width:880px){
+  .nav-links{display:none}
+}
+
+/* ---------- Section frame ---------- */
+section{padding:120px 0;border-bottom:1px solid var(--hairline-soft);position:relative}
+@media (max-width:720px){section{padding:80px 0}}
+.sec-label{
+  display:flex;align-items:baseline;gap:14px;
+  font-family:var(--mono);font-size:11px;letter-spacing:0.18em;
+  color:var(--text-mute);text-transform:uppercase;
+  margin-bottom:48px;
+}
+.sec-label .num{color:var(--orange)}
+.sec-label .rule{flex:1;height:1px;background:var(--hairline)}
+
+/* ---------- Hero ---------- */
+.hero{
+  padding-top:160px;padding-bottom:120px;
+  border-bottom:1px solid var(--hairline-soft);
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:
+    linear-gradient(to right,var(--hairline-soft) 1px,transparent 1px),
+    linear-gradient(to bottom,var(--hairline-soft) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse at 70% 30%,#000 0%,transparent 70%);
+  -webkit-mask-image:radial-gradient(ellipse at 70% 30%,#000 0%,transparent 70%);
+  opacity:0.5;
+}
+.hero-grid{
+  display:grid;grid-template-columns:1.4fr 1fr;gap:80px;align-items:end;
+  position:relative;z-index:1;
+}
+@media (max-width:1080px){.hero-grid{grid-template-columns:1fr;gap:48px;align-items:start}}
+
+.hero-meta{
+  display:flex;gap:24px;font-family:var(--mono);font-size:11px;
+  color:var(--text-mute);letter-spacing:0.18em;text-transform:uppercase;
+  margin-bottom:40px;
+}
+.hero-meta .dot{color:var(--orange)}
+
+.hero h1{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(3.6rem,10vw,9.2rem);
+  line-height:0.92;letter-spacing:-0.045em;
+  font-variation-settings:"opsz" 144,"SOFT" 0;
+}
+.hero h1 .em{font-style:italic;font-weight:400;color:var(--orange-soft);font-variation-settings:"opsz" 144,"SOFT" 50}
+.hero h1 .sub{display:block;font-size:0.42em;letter-spacing:-0.02em;color:var(--text-dim);margin-top:12px;font-weight:300}
+
+.hero-tagline{
+  max-width:520px;margin-top:36px;
+  font-size:18px;line-height:1.5;color:var(--text-dim);
+}
+.hero-tagline strong{color:var(--text);font-weight:500}
+
+.hero-ctas{display:flex;gap:14px;margin-top:40px;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 22px;border-radius:2px;
+  font-family:var(--mono);font-size:12px;letter-spacing:0.1em;
+  text-transform:uppercase;font-weight:600;
+  transition:transform 0.18s ease,background 0.18s ease;
+}
+.btn-primary{background:var(--orange);color:#0b0b0c}
+.btn-primary:hover{transform:translateY(-1px);background:color-mix(in srgb,var(--orange) 90%,white)}
+.btn-ghost{border:1px solid var(--hairline);color:var(--text-dim)}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--text)}
+.btn .arrow{display:inline-block;transition:transform 0.18s}
+.btn:hover .arrow{transform:translateX(3px)}
+
+/* Hero demo media (GIF + animated fallback) */
+.hero-mock{
+  background:var(--bg-card);border:1px solid var(--hairline);
+  border-radius:6px;overflow:hidden;margin:0;
+  box-shadow:0 30px 80px -20px rgba(0,0,0,0.6),0 0 0 1px var(--hairline-soft);
+  position:relative;
+}
+.mock-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;background:var(--bg-soft);border-bottom:1px solid var(--hairline-soft);
+  font-family:var(--mono);font-size:10px;color:var(--text-mute);letter-spacing:0.06em;
+}
+.mock-bar .dots{display:flex;gap:6px}
+.mock-bar .dots span{width:10px;height:10px;border-radius:50%;background:var(--hairline)}
+.mock-bar .title{flex:1;text-align:center}
+.mock-rec{
+  display:flex;align-items:center;gap:6px;
+  font-size:10px;color:var(--text-dim);letter-spacing:0.16em;
+  font-weight:600;
+}
+.rec-dot{
+  width:8px;height:8px;border-radius:50%;background:#ff3344;
+  box-shadow:0 0 10px rgba(255,51,68,0.7);
+  animation:rec-blink 1.4s ease-in-out infinite;
+}
+@keyframes rec-blink{0%,100%{opacity:1}50%{opacity:0.25}}
+
+/* Stage: holds GIF (when present) or fallback */
+.mock-stage{
+  position:relative;
+  aspect-ratio:16/10;
+  background:#08080a;
+  overflow:hidden;
+}
+.hero-gif{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:5;
+  background:#08080a;
+}
+.mock-fallback{
+  position:absolute;inset:0;z-index:1;
+  display:grid;grid-template-rows:1.6fr 1fr;
+}
+
+/* Viewport: rotating wireframe cube on grid floor */
+.mock-viewport{
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%,rgba(255,106,26,0.10) 0%,transparent 70%),
+    linear-gradient(180deg,#0d0d10 0%,#08080a 100%);
+}
+.vp-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(to right,rgba(255,255,255,0.05) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(255,255,255,0.05) 1px,transparent 1px);
+  background-size:28px 28px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 70%,#000 0%,transparent 100%);
+  -webkit-mask-image:radial-gradient(ellipse 80% 60% at 50% 70%,#000 0%,transparent 100%);
+}
+.vp-axes{
+  position:absolute;left:14px;bottom:14px;width:32px;height:32px;
+  background:
+    linear-gradient(to right,#ff3344 0,#ff3344 14px,transparent 14px) no-repeat 0 50% / 14px 1.5px,
+    linear-gradient(to top,#66ff44 0,#66ff44 14px,transparent 14px) no-repeat 50% 100% / 1.5px 14px;
+}
+.cube-wrap{
+  position:absolute;inset:0;
+  display:grid;place-items:center;
+  perspective:900px;
+}
+.cube{
+  width:90px;height:90px;
+  position:relative;
+  transform-style:preserve-3d;
+  animation:cube-spin 14s linear infinite;
+}
+.cube-face{
+  position:absolute;width:90px;height:90px;
+  border:1px solid var(--orange);
+  background:
+    linear-gradient(45deg,transparent 49.5%,rgba(255,106,26,0.35) 50%,transparent 50.5%),
+    linear-gradient(-45deg,transparent 49.5%,rgba(255,106,26,0.35) 50%,transparent 50.5%),
+    rgba(255,106,26,0.04);
+  box-shadow:inset 0 0 30px rgba(255,106,26,0.08);
+}
+.cf-front{transform:translateZ(45px)}
+.cf-back{transform:rotateY(180deg) translateZ(45px)}
+.cf-left{transform:rotateY(-90deg) translateZ(45px)}
+.cf-right{transform:rotateY(90deg) translateZ(45px)}
+.cf-top{transform:rotateX(90deg) translateZ(45px)}
+.cf-bottom{transform:rotateX(-90deg) translateZ(45px)}
+@keyframes cube-spin{
+  0%  {transform:rotateX(-22deg) rotateY(0deg)}
+  100%{transform:rotateX(-22deg) rotateY(360deg)}
+}
+
+.vp-label{
+  position:absolute;top:14px;left:14px;
+  display:flex;flex-direction:column;gap:3px;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.06em;
+}
+.vp-label .vp-name{color:var(--orange);font-weight:600}
+.vp-label .vp-stats{color:var(--text-mute)}
+.vp-corner-tl,.vp-corner-br{
+  position:absolute;font-family:var(--mono);font-size:9px;
+  color:var(--text-mute);letter-spacing:0.1em;text-transform:uppercase;
+}
+.vp-corner-tl{top:14px;right:14px}
+.vp-corner-br{bottom:14px;right:14px}
+
+/* Readout: typewriter + progress + status */
+.mock-readout{
+  padding:14px 18px;font-family:var(--mono);font-size:12px;
+  border-top:1px solid var(--hairline-soft);
+  display:flex;flex-direction:column;gap:8px;justify-content:center;
+  background:var(--bg-card);
+}
+.mock-prompt{
+  background:#0a0a0d;border:1px solid var(--hairline-soft);
+  padding:10px 12px;border-radius:3px;color:var(--text);
+  font-size:12px;
+}
+.mock-prompt::before{content:"> ";color:var(--orange)}
+.mock-typewriter{
+  display:inline-block;overflow:hidden;white-space:nowrap;
+  border-right:2px solid var(--orange);
+  animation:type 5s steps(32,end) infinite,blink 0.8s step-end infinite;
+  vertical-align:bottom;
+}
+@keyframes type{
+  0%,4%{width:0}
+  60%,72%{width:32ch}
+  96%,100%{width:0}
+}
+@keyframes blink{50%{border-color:transparent}}
+
+.mock-progress{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.mock-progress .bar{color:var(--mint);letter-spacing:1px}
+.mock-progress .pct{color:var(--text-dim);font-size:10px}
+.mock-progress .mock-done{
+  margin-left:auto;color:var(--mint);font-size:10px;
+  letter-spacing:0.08em;
+}
+
+.mock-foot{
+  display:flex;justify-content:space-between;
+  font-size:10px;color:var(--text-mute);
+  padding:10px 14px;border-top:1px solid var(--hairline-soft);
+  font-family:var(--mono);letter-spacing:0.08em;text-transform:uppercase;
+}
+
+/* ---------- Workflow ---------- */
+.workflow-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  border-top:1px solid var(--hairline);
+}
+@media (max-width:880px){.workflow-grid{grid-template-columns:1fr}}
+.step{
+  padding:48px 32px 40px;
+  border-right:1px solid var(--hairline);
+  position:relative;min-height:280px;
+}
+.step:last-child{border-right:0}
+@media (max-width:880px){.step{border-right:0;border-bottom:1px solid var(--hairline)}.step:last-child{border-bottom:0}}
+.step-num{
+  font-family:var(--mono);font-size:10px;color:var(--orange);
+  letter-spacing:0.2em;margin-bottom:24px;
+}
+.step h3{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(1.8rem,3vw,2.6rem);line-height:1;letter-spacing:-0.02em;
+  margin-bottom:18px;
+}
+.step p{color:var(--text-dim);max-width:280px;line-height:1.6}
+.step-glyph{
+  position:absolute;top:48px;right:32px;
+  font-family:var(--mono);font-size:11px;color:var(--text-mute);
+  letter-spacing:0.06em;
+}
+
+/* ---------- Features ---------- */
+.features-grid{
+  display:grid;grid-template-columns:repeat(12,1fr);gap:1px;
+  background:var(--hairline);border:1px solid var(--hairline);
+}
+.feat{
+  background:var(--bg);
+  padding:36px 28px;
+  display:flex;flex-direction:column;gap:14px;min-height:240px;
+}
+.feat.span-6{grid-column:span 6}
+.feat.span-4{grid-column:span 4}
+.feat.span-8{grid-column:span 8}
+.feat.span-12{grid-column:span 12}
+@media (max-width:880px){.feat,.feat.span-6,.feat.span-4,.feat.span-8,.feat.span-12{grid-column:span 12}}
+.feat-tag{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  color:var(--orange);text-transform:uppercase;
+}
+.feat h4{
+  font-family:var(--serif);font-weight:400;
+  font-size:1.7rem;line-height:1.05;letter-spacing:-0.015em;
+}
+.feat p{color:var(--text-dim);font-size:14.5px;line-height:1.6;max-width:380px}
+.feat .pull{
+  font-family:var(--serif);font-style:italic;font-weight:300;
+  font-size:2.4rem;line-height:1.1;color:var(--orange-soft);
+  margin-top:8px;
+  font-variation-settings:"opsz" 80,"SOFT" 60;
+}
+.feat-bar{
+  margin-top:auto;padding-top:16px;
+  display:flex;justify-content:space-between;align-items:baseline;
+  border-top:1px solid var(--hairline-soft);
+  font-family:var(--mono);font-size:10px;color:var(--text-mute);
+  letter-spacing:0.1em;text-transform:uppercase;
+}
+
+/* ---------- Dual Market ---------- */
+.markets{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid var(--hairline);
+}
+@media (max-width:880px){.markets{grid-template-columns:1fr}}
+.market{padding:56px 40px;position:relative}
+.market:first-child{border-right:1px solid var(--hairline)}
+@media (max-width:880px){.market:first-child{border-right:0;border-bottom:1px solid var(--hairline)}}
+.market-flag{
+  font-family:var(--mono);font-size:11px;letter-spacing:0.2em;
+  color:var(--text-mute);text-transform:uppercase;margin-bottom:24px;
+}
+.market h3{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(2.2rem,4vw,3.4rem);line-height:1;letter-spacing:-0.02em;
+  margin-bottom:18px;
+}
+.market h3 .accent{font-style:italic;color:var(--orange)}
+.market .desc{color:var(--text-dim);max-width:380px;margin-bottom:32px;font-size:15px;line-height:1.6}
+.channel-list{display:flex;flex-direction:column;gap:8px}
+.channel{
+  display:flex;justify-content:space-between;
+  padding:14px 0;border-top:1px solid var(--hairline-soft);
+  font-family:var(--mono);font-size:13px;
+}
+.channel .name{color:var(--text)}
+.channel .role{color:var(--text-mute);font-size:11px;letter-spacing:0.12em;text-transform:uppercase}
+.market-spec{
+  position:absolute;top:56px;right:40px;
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  color:var(--orange);text-transform:uppercase;
+}
+
+/* ---------- Presets ---------- */
+.presets-intro{
+  display:flex;justify-content:space-between;align-items:flex-end;
+  gap:32px;margin-bottom:48px;flex-wrap:wrap;
+}
+.presets-intro h2{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(2.4rem,5vw,4rem);line-height:1;letter-spacing:-0.02em;
+  max-width:680px;
+}
+.presets-intro h2 .em{font-style:italic;color:var(--orange-soft);font-variation-settings:"opsz" 144,"SOFT" 50}
+.presets-intro p{max-width:340px;color:var(--text-dim);font-size:14.5px;line-height:1.6}
+
+.preset-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--hairline);border:1px solid var(--hairline);
+}
+@media (max-width:1080px){.preset-grid{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:720px){.preset-grid{grid-template-columns:repeat(2,1fr)}}
+.preset{
+  background:var(--bg);padding:24px;min-height:220px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;
+  transition:background 0.2s ease;
+}
+.preset:hover{background:var(--bg-soft)}
+.preset:hover .preset-mesh{transform:rotate(45deg) scale(1.05);opacity:0.5}
+.preset-mesh{
+  position:absolute;top:50%;right:-20px;
+  width:120px;height:120px;
+  transform:rotate(35deg);opacity:0.18;
+  transition:transform 0.4s ease,opacity 0.4s ease;
+  pointer-events:none;
+}
+.preset-mesh svg{width:100%;height:100%;stroke:var(--orange);stroke-width:0.5;fill:none}
+.preset-cat{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  color:var(--text-mute);text-transform:uppercase;
+}
+.preset-name{
+  font-family:var(--serif);font-weight:400;
+  font-size:1.6rem;line-height:1;letter-spacing:-0.015em;
+  position:relative;z-index:1;
+}
+.preset-prompt{
+  font-family:var(--mono);font-size:11px;color:var(--text-dim);
+  line-height:1.5;position:relative;z-index:1;
+  padding-top:14px;border-top:1px solid var(--hairline-soft);
+}
+.preset-prompt::before{content:"// ";color:var(--orange)}
+
+/* ---------- Pricing ---------- */
+.pricing-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  border:1px solid var(--hairline);
+}
+@media (max-width:880px){.pricing-grid{grid-template-columns:1fr}}
+.plan{padding:48px 36px;display:flex;flex-direction:column;gap:24px}
+.plan + .plan{border-left:1px solid var(--hairline)}
+@media (max-width:880px){.plan + .plan{border-left:0;border-top:1px solid var(--hairline)}}
+.plan.pro{background:linear-gradient(180deg,rgba(255,106,26,0.04) 0%,transparent 60%)}
+.plan-head{display:flex;justify-content:space-between;align-items:baseline}
+.plan-name{
+  font-family:var(--serif);font-weight:300;
+  font-size:2.4rem;line-height:1;letter-spacing:-0.02em;
+}
+.plan-name .it{font-style:italic;color:var(--orange)}
+.plan-badge{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  padding:5px 10px;border:1px solid var(--orange);color:var(--orange);
+  text-transform:uppercase;border-radius:2px;
+}
+.plan-price{
+  font-family:var(--serif);font-weight:300;
+  font-size:3.6rem;line-height:1;letter-spacing:-0.025em;
+}
+.plan-price .unit{font-family:var(--mono);font-size:12px;color:var(--text-mute);letter-spacing:0.12em;text-transform:uppercase;margin-left:8px}
+.plan-price-sub{font-family:var(--mono);font-size:11px;color:var(--text-mute);letter-spacing:0.12em;text-transform:uppercase;margin-top:-12px}
+.plan ul{list-style:none;display:flex;flex-direction:column;gap:12px;font-size:14.5px}
+.plan li{
+  display:flex;gap:12px;align-items:flex-start;color:var(--text-dim);
+  padding-left:18px;position:relative;line-height:1.55;
+}
+.plan li::before{
+  content:"+";position:absolute;left:0;top:0;
+  color:var(--orange);font-family:var(--mono);font-weight:600;
+}
+.plan li.muted::before{content:"−";color:var(--text-mute)}
+.plan li.muted{color:var(--text-mute);text-decoration:line-through;text-decoration-color:var(--text-mute)}
+.plan-cta{
+  margin-top:auto;display:inline-flex;align-items:center;justify-content:center;
+  padding:16px;border-radius:2px;
+  font-family:var(--mono);font-size:12px;letter-spacing:0.1em;
+  text-transform:uppercase;font-weight:600;
+}
+.plan.free .plan-cta{border:1px solid var(--hairline);color:var(--text-dim)}
+.plan.free .plan-cta:hover{border-color:var(--text);color:var(--text)}
+.plan.pro .plan-cta{background:var(--orange);color:#0b0b0c}
+.plan.pro .plan-cta:hover{background:color-mix(in srgb,var(--orange) 90%,white)}
+
+/* ---------- FAQ ---------- */
+.faq-list{border-top:1px solid var(--hairline)}
+.faq-item{border-bottom:1px solid var(--hairline);overflow:hidden}
+.faq-q{
+  width:100%;text-align:left;padding:28px 0;
+  display:flex;justify-content:space-between;align-items:center;gap:24px;
+  font-family:var(--serif);font-weight:400;font-size:clamp(1.2rem,2vw,1.6rem);
+  letter-spacing:-0.01em;color:var(--text);
+  transition:color 0.18s ease;
+}
+.faq-q:hover{color:var(--orange)}
+.faq-q .toggle{
+  font-family:var(--mono);font-size:11px;color:var(--text-mute);
+  letter-spacing:0.1em;flex-shrink:0;transition:transform 0.3s ease;
+}
+.faq-item.open .faq-q .toggle{transform:rotate(45deg);color:var(--orange)}
+.faq-a{
+  max-height:0;opacity:0;
+  transition:max-height 0.35s ease,opacity 0.2s ease,padding 0.3s ease;
+  color:var(--text-dim);line-height:1.7;max-width:780px;font-size:15px;
+}
+.faq-item.open .faq-a{max-height:400px;opacity:1;padding-bottom:32px}
+
+/* ---------- Final CTA ---------- */
+.final-cta{
+  padding:160px 0 120px;text-align:center;
+  border-bottom:1px solid var(--hairline-soft);position:relative;overflow:hidden;
+}
+.final-cta::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse 60% 80% at 50% 30%,rgba(255,106,26,0.10) 0%,transparent 70%);
+  pointer-events:none;
+}
+.final-cta h2{
+  font-family:var(--serif);font-weight:300;
+  font-size:clamp(3rem,8vw,7rem);line-height:0.95;letter-spacing:-0.04em;
+  position:relative;
+}
+.final-cta h2 .em{font-style:italic;color:var(--orange);font-variation-settings:"opsz" 144,"SOFT" 50}
+.final-cta p{
+  margin:32px auto 40px;max-width:540px;color:var(--text-dim);
+  font-size:17px;line-height:1.5;position:relative;
+}
+.final-cta .hero-ctas{justify-content:center;position:relative}
+
+/* ---------- Footer ---------- */
+footer{padding:64px 0 48px;color:var(--text-mute)}
+.foot-grid{
+  display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:48px;
+  margin-bottom:48px;
+}
+@media (max-width:720px){.foot-grid{grid-template-columns:1fr 1fr;gap:32px}}
+.foot-brand{font-family:var(--serif);font-size:1.4rem;color:var(--text);margin-bottom:12px}
+.foot-tag{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;color:var(--text-mute);text-transform:uppercase;line-height:1.7}
+.foot-col h5{
+  font-family:var(--mono);font-size:10px;letter-spacing:0.18em;
+  color:var(--text-mute);text-transform:uppercase;margin-bottom:14px;
+}
+.foot-col a{display:block;padding:5px 0;font-size:14px;color:var(--text-dim);transition:color 0.15s}
+.foot-col a:hover{color:var(--orange)}
+.foot-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:24px;border-top:1px solid var(--hairline-soft);
+  font-family:var(--mono);font-size:11px;letter-spacing:0.08em;
+  color:var(--text-mute);
+}
+.foot-bar .dot{color:var(--orange);margin:0 6px}
+
+/* ---------- Bilingual swap ---------- */
+[data-zh],[data-en]{display:inline}
+html[data-lang="zh"] [data-show="en"]{display:none}
+html[data-lang="en"] [data-show="zh"]{display:none}
+
+/* ---------- Stagger reveals ---------- */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.7s ease,transform 0.7s ease}
+.reveal.in{opacity:1;transform:translateY(0)}
+.reveal-1{transition-delay:0.05s}
+.reveal-2{transition-delay:0.12s}
+.reveal-3{transition-delay:0.20s}
+.reveal-4{transition-delay:0.28s}
+.reveal-5{transition-delay:0.36s}
+
+/* ---------- Reduce motion ---------- */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:0.01s !important;transition-duration:0.01s !important}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="shell nav">
+    <a class="brand" href="#top">
+      <span class="mark">AIM</span>
+      <span>Mesh Maker</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#workflow"><span data-show="zh">流程</span><span data-show="en">Workflow</span></a>
+      <a href="#features"><span data-show="zh">功能</span><span data-show="en">Features</span></a>
+      <a href="#presets"><span data-show="zh">预设</span><span data-show="en">Presets</span></a>
+      <a href="#pricing"><span data-show="zh">价格</span><span data-show="en">Pricing</span></a>
+      <a href="#faq">FAQ</a>
+    </nav>
+    <div class="nav-right">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button data-set-lang="en" class="active">EN</button>
+        <button data-set-lang="zh">中</button>
+      </div>
+      <a class="cta-mini" href="#cta">
+        <span data-show="zh">下载</span><span data-show="en">Get it</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="hero" id="top">
+  <div class="shell hero-grid">
+    <div>
+      <div class="hero-meta">
+        <span><span class="dot">●</span> v0.4 BETA</span>
+        <span>BLENDER 4.0+</span>
+        <span>POWERED BY TRIPO3D</span>
+      </div>
+
+      <h1 class="reveal in reveal-1">
+        <span data-show="zh">文字，<br><span class="em">即模型。</span></span>
+        <span data-show="en">Text becomes<br><span class="em">mesh.</span></span>
+        <span class="sub" data-show="zh">在 Blender 内 · 30 秒成型 · 概念建模的捷径</span>
+        <span class="sub" data-show="en">Inside Blender. In seconds. The shortcut for concept modeling.</span>
+      </h1>
+
+      <p class="hero-tagline reveal reveal-3">
+        <span data-show="zh"><strong>AI Mesh Maker</strong> 是一款 Blender 4.0+ 插件 — 输入一句话，30 秒后场景里就有一个带 PBR 材质的可编辑模型。Tripo3D 主引擎，配 30+ 调好的预设：sci-fi 道具、奇幻武器、机甲、卡通角色、赛博载具一键套用。</span>
+        <span data-show="en"><strong>AI Mesh Maker</strong> is a Blender 4.0+ add-on. Type a prompt — get an editable, PBR-textured mesh in your viewport within 30 seconds. Powered by Tripo3D, packed with 30+ battle-tested presets across sci-fi, fantasy, mecha, stylized characters, and cyberpunk vehicles.</span>
+      </p>
+
+      <div class="hero-ctas reveal reveal-4">
+        <a class="btn btn-primary" href="#cta">
+          <span data-show="zh">申请抢先体验</span><span data-show="en">Get early access</span>
+          <span class="arrow">→</span>
+        </a>
+        <a class="btn btn-ghost" href="#workflow">
+          <span data-show="zh">查看演示</span><span data-show="en">See it work</span>
+          <span class="arrow">↘</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Demo media (GIF if available, animated fallback otherwise) -->
+    <figure class="hero-mock reveal reveal-5">
+      <div class="mock-bar">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="title">ai_mesh_maker · blender 4.0</div>
+        <span class="mock-rec"><span class="rec-dot"></span> REC</span>
+      </div>
+      <div class="mock-stage">
+        <!-- Layer 1: real GIF (auto-removes itself if file missing) -->
+        <img src="assets/demo.gif" alt="AI Mesh Maker workflow demo" class="hero-gif" loading="lazy" onerror="this.remove()">
+
+        <!-- Layer 2: animated fallback -->
+        <div class="mock-fallback">
+          <div class="mock-viewport">
+            <div class="vp-grid"></div>
+            <div class="vp-axes"></div>
+            <div class="cube-wrap">
+              <div class="cube">
+                <div class="cube-face cf-front"></div>
+                <div class="cube-face cf-back"></div>
+                <div class="cube-face cf-left"></div>
+                <div class="cube-face cf-right"></div>
+                <div class="cube-face cf-top"></div>
+                <div class="cube-face cf-bottom"></div>
+              </div>
+            </div>
+            <div class="vp-label">
+              <span class="vp-name">AIMesh_chinese_teapot</span>
+              <span class="vp-stats">Verts 2,048 · Tris 4,096 · PBR</span>
+            </div>
+            <div class="vp-corner-tl">User Perspective</div>
+            <div class="vp-corner-br">(1) Collection</div>
+          </div>
+          <div class="mock-readout">
+            <div class="mock-prompt">
+              <span class="mock-typewriter">a chinese teapot, blue and white</span>
+            </div>
+            <div class="mock-progress">
+              <span class="bar">▰▰▰▰▰▰▰▰▰▰</span>
+              <span class="pct">100%</span>
+              <span class="mock-done">
+                <span data-show="zh">✓ 已导入 · 42s</span><span data-show="en">✓ Imported · 42s</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption class="mock-foot">
+        <span>Tripo3D · text_to_model · v2.5</span>
+        <span>face_limit · 8000</span>
+        <span>00:42</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============== WORKFLOW ============== -->
+<section id="workflow">
+  <div class="shell">
+    <div class="sec-label">
+      <span class="num">§01</span>
+      <span data-show="zh">三步成型</span><span data-show="en">Three steps to mesh</span>
+      <span class="rule"></span>
+      <span data-show="zh">大约 30 秒</span><span data-show="en">~30 seconds</span>
+    </div>
+
+    <div class="workflow-grid">
+      <div class="step">
+        <div class="step-num">STEP 01</div>
+        <div class="step-glyph">⌨ ⟶</div>
+        <h3><span data-show="zh">写下来</span><span data-show="en">Write it</span></h3>
+        <p>
+          <span data-show="zh">在侧边栏输入中文或英文 prompt — "a chinese teapot, blue and white"。支持模板与历史记录。</span>
+          <span data-show="en">Type a prompt — in Chinese or English — into Blender's N-panel. Pick from presets or type freely.</span>
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 02</div>
+        <div class="step-glyph">▰▰▰▱▱</div>
+        <h3><span data-show="zh">AI 生成</span><span data-show="en">AI generates</span></h3>
+        <p>
+          <span data-show="zh">异步轮询不卡 UI，进度条实时显示，7 种错误自动重试。Tripo3D / 混元 3D 自动按地区切换。</span>
+          <span data-show="en">Async polling, live progress bar, automatic retries on transient errors. The engine routes itself by your locale.</span>
+        </p>
+      </div>
+      <div class="step">
+        <div class="step-num">STEP 03</div>
+        <div class="step-glyph">⌬ ⟵</div>
+        <h3><span data-show="zh">导入场景</span><span data-show="en">Drop in scene</span></h3>
+        <p>
+          <span data-show="zh">.glb 模型自动下载、自动导入、自动命名。PBR 材质、UV 全部跟过来，立刻可编辑。</span>
+          <span data-show="en">A textured .glb lands in your scene — PBR materials and UVs intact, named after your prompt, ready to edit.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FEATURES ============== -->
+<section id="features">
+  <div class="shell">
+    <div class="sec-label">
+      <span class="num">§02</span>
+      <span data-show="zh">为什么用它</span><span data-show="en">Why this, not that</span>
+      <span class="rule"></span>
+      <span data-show="zh">六个差异化卖点</span><span data-show="en">Six things others miss</span>
+    </div>
+
+    <div class="features-grid">
+      <div class="feat span-6">
+        <div class="feat-tag">SPEED</div>
+        <h4><span data-show="zh">从 prompt 到 PBR 模型 — 30 秒</span><span data-show="en">From prompt to PBR mesh — 30 seconds</span></h4>
+        <p>
+          <span data-show="zh">异步轮询不阻塞 UI，进度条实时显示。期间你可以继续在 Blender 里干活，模型生成完会自动导入。</span>
+          <span data-show="en">Async polling so the UI never blocks. Keep modeling in Blender while it generates — the finished mesh drops into your scene automatically.</span>
+        </p>
+        <div class="pull">+ <span style="font-style:normal">PBR</span><span style="color:var(--text-mute);font-style:normal">. UVs intact.</span></div>
+        <div class="feat-bar"><span>TRIPO3D · v2.5</span><span>NON-BLOCKING</span></div>
+      </div>
+
+      <div class="feat span-3" style="grid-column:span 3">
+        <div class="feat-tag">PRESETS</div>
+        <h4><span data-show="zh">30+ 预设</span><span data-show="en">30+ presets</span></h4>
+        <p>
+          <span data-show="zh">Sci-fi、奇幻、低多边形、机甲、卡通、赛博朋克…每个 prompt 都跑过几十次确保形态稳。</span>
+          <span data-show="en">Sci-fi, fantasy, low-poly, mecha, stylized characters, cyberpunk — every prompt tested dozens of times so the silhouette holds.</span>
+        </p>
+        <div class="feat-bar"><span>30+ TEMPLATES</span><span>EXPANDING</span></div>
+      </div>
+
+      <div class="feat span-3" style="grid-column:span 3">
+        <div class="feat-tag">RELIABILITY</div>
+        <h4><span data-show="zh">不撒谎的进度条</span><span data-show="en">No silent failures</span></h4>
+        <p>
+          <span data-show="zh">7 种错误分类，每种都告诉你怎么修；瞬时错误自动重试 3 次。</span>
+          <span data-show="en">Seven error classes, each with a one-line fix. Transient errors auto-retry up to three times.</span>
+        </p>
+        <div class="feat-bar"><span>7 ERROR CLASSES</span><span>AUTO-RETRY</span></div>
+      </div>
+
+      <div class="feat span-4">
+        <div class="feat-tag">OWNERSHIP</div>
+        <h4><span data-show="zh">你付 API，你拥有模型</span><span data-show="en">Your key. Your meshes.</span></h4>
+        <p>
+          <span data-show="zh">插件一次性买断。你用你自己的 Tripo3D API Key — 我们不抽流水，不存你的数据。生成的模型归你，可商用。</span>
+          <span data-show="en">Pay once for the plugin. Use your own Tripo3D API key — we take zero cut of your usage and store none of your data. Meshes are yours, commercial use included.</span>
+        </p>
+        <div class="feat-bar"><span>BYOK · LIFETIME</span><span>NO LOCK-IN</span></div>
+      </div>
+
+      <div class="feat span-4">
+        <div class="feat-tag">WORKFLOW</div>
+        <h4><span data-show="zh">即装即用 .glb</span><span data-show="en">Drops in as .glb</span></h4>
+        <p>
+          <span data-show="zh">PBR 材质 + UV 全部跟过来，自动按 prompt 命名。直接送到 Unity / Unreal / 3D 打印不需要清理。</span>
+          <span data-show="en">Meshes import with PBR materials, UVs, and a prompt-derived name baked in. Ship straight to Unity, Unreal, or your slicer — no cleanup pass needed.</span>
+        </p>
+        <div class="feat-bar"><span>.GLB · PBR · UV</span><span>NATIVE IMPORT</span></div>
+      </div>
+
+      <div class="feat span-4">
+        <div class="feat-tag">FLEXIBLE</div>
+        <h4><span data-show="zh">备用引擎切换</span><span data-show="en">Bring your own engine</span></h4>
+        <p>
+          <span data-show="zh">主用 Tripo3D。但如果你想试 Meshy 或腾讯混元（中文 prompt 更强），切换 provider 即可，相同 UI。</span>
+          <span data-show="en">Default to Tripo3D. Curious about Meshy or Tencent Hunyuan 3D (stronger on Chinese prompts)? Swap providers in Preferences — same UI, same workflow.</span>
+        </p>
+        <div class="feat-bar"><span>TRIPO · MESHY · HUNYUAN</span><span>ONE PANEL</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PRESETS ============== -->
+<section id="presets">
+  <div class="shell">
+    <div class="sec-label">
+      <span class="num">§03</span>
+      <span data-show="zh">海外热门预设</span><span data-show="en">Community-favorite presets</span>
+      <span class="rule"></span>
+      <span data-show="zh">本月新增 12 个</span><span data-show="en">12 added this month</span>
+    </div>
+
+    <div class="presets-intro">
+      <h2>
+        <span data-show="zh">能直接用的 <span class="em">prompt 公式</span>。</span>
+        <span data-show="en">Prompts that <span class="em">already</span> work.</span>
+      </h2>
+      <p>
+        <span data-show="zh">普通 AI text-to-3D 给你的是要迭代 5 次的"blob"。这里是 30+ 我们替你跑过几十次的 prompt 公式 — sci-fi 道具、奇幻武器、低多边形环境、机甲、卡通角色、赛博载具 — Blender 社区最熟的品类，加进场景就能改。</span>
+        <span data-show="en">Generic AI text-to-3D gives you blobs that need five iterations. These are 30+ prompt formulas we battle-tested across dozens of runs — sci-fi props, fantasy weapons, low-poly environments, mecha, stylized characters, cyberpunk vehicles. The categories the Blender community actually ships.</span>
+      </p>
+    </div>
+
+    <div class="preset-grid">
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M30 25 L70 25 L85 50 L70 75 L30 75 L15 50 Z M15 50 L85 50 M30 25 L30 75 M70 25 L70 75 M40 35 L60 35 M40 65 L60 65"/></svg></div>
+        <div class="preset-cat">PROP · SCI-FI</div>
+        <div class="preset-name"><span data-show="zh">科幻货箱</span><span data-show="en">Sci-fi crate</span></div>
+        <div class="preset-prompt">a futuristic sci-fi cargo crate, hexagonal panels, glowing edges, weathered metal</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M50 8 L50 68 M38 50 L62 50 M44 68 L56 68 L56 82 L44 82 Z M47 82 L47 92 L53 92 L53 82"/></svg></div>
+        <div class="preset-cat">WEAPON · FANTASY</div>
+        <div class="preset-name"><span data-show="zh">奇幻长剑</span><span data-show="en">Fantasy long sword</span></div>
+        <div class="preset-prompt">an ornate fantasy long sword, engraved blade, dragon pommel, leather-wrapped grip</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M50 12 L35 38 L42 38 L30 60 L40 60 L26 82 L74 82 L60 60 L70 60 L58 38 L65 38 Z M45 82 L45 95 L55 95 L55 82"/></svg></div>
+        <div class="preset-cat">NATURE · LOW-POLY</div>
+        <div class="preset-name"><span data-show="zh">低多边形树</span><span data-show="en">Low-poly tree</span></div>
+        <div class="preset-prompt">a low-poly stylized pine tree, flat-shaded triangular leaves, sharp polygons</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M38 22 L62 22 L62 50 L38 50 Z M44 28 L48 28 M52 28 L56 28 M38 32 L26 32 L26 52 M62 32 L74 32 L74 52 M40 50 L40 78 L48 78 L48 50 M52 50 L52 78 L60 78 L60 50 M40 78 L36 88 M60 78 L64 88"/></svg></div>
+        <div class="preset-cat">MECHA · ROBOT</div>
+        <div class="preset-name"><span data-show="zh">人形机甲</span><span data-show="en">Combat mecha</span></div>
+        <div class="preset-prompt">a humanoid combat mecha, articulated joints, military armor plating, shoulder cannons</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><circle cx="50" cy="28" r="16"/><path d="M50 44 L50 72 M30 56 L70 56 M50 72 L38 92 M50 72 L62 92"/></svg></div>
+        <div class="preset-cat">CHARACTER · STYLIZED</div>
+        <div class="preset-name"><span data-show="zh">Q 版角色</span><span data-show="en">Chibi character</span></div>
+        <div class="preset-prompt">a stylized chibi cartoon character, oversized head, T-pose, clean topology</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M50 12 L20 78 L50 65 L80 78 Z M50 25 L40 70 M50 25 L60 70 M30 75 L20 88 M70 75 L80 88"/></svg></div>
+        <div class="preset-cat">VEHICLE · SCI-FI</div>
+        <div class="preset-name"><span data-show="zh">星际战机</span><span data-show="en">Sci-fi fighter</span></div>
+        <div class="preset-prompt">a sleek sci-fi space fighter, aerodynamic hull, thruster engines, panel detail</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><path d="M30 28 L70 28 L70 82 L30 82 Z M30 28 Q50 20 70 28 M30 82 Q50 90 70 82 M30 45 L70 45 M30 65 L70 65"/></svg></div>
+        <div class="preset-cat">PROP · GAME ASSET</div>
+        <div class="preset-name"><span data-show="zh">木桶道具</span><span data-show="en">Game-ready barrel</span></div>
+        <div class="preset-prompt">a weathered wooden barrel with iron bands, game-ready, low-poly, PBR textures</div>
+      </div>
+      <div class="preset">
+        <div class="preset-mesh"><svg viewBox="0 0 100 100"><ellipse cx="50" cy="58" rx="38" ry="14"/><path d="M22 70 L78 70 M32 78 L68 78 M16 58 L24 58 M76 58 L84 58 M30 48 L70 48"/></svg></div>
+        <div class="preset-cat">VEHICLE · CYBERPUNK</div>
+        <div class="preset-name"><span data-show="zh">赛博悬浮车</span><span data-show="en">Cyberpunk hovercar</span></div>
+        <div class="preset-prompt">a cyberpunk hover car, neon underglow, aerodynamic chassis, rain-slick reflections</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PRICING ============== -->
+<section id="pricing">
+  <div class="shell">
+    <div class="sec-label">
+      <span class="num">§04</span>
+      <span data-show="zh">价格</span><span data-show="en">Price</span>
+      <span class="rule"></span>
+      <span data-show="zh">一次性买断 · 终身更新</span><span data-show="en">Pay once · lifetime updates</span>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="plan free">
+        <div class="plan-head">
+          <div class="plan-name"><span data-show="zh">免费版</span><span data-show="en">Free</span></div>
+          <div class="plan-badge" style="border-color:var(--text-mute);color:var(--text-mute)">Beta</div>
+        </div>
+        <div>
+          <div class="plan-price">$0</div>
+          <div class="plan-price-sub"><span data-show="zh">永久免费 / 仅 Tripo3D</span><span data-show="en">Forever / Tripo3D only</span></div>
+        </div>
+        <ul>
+          <li><span data-show="zh">Tripo3D 单引擎</span><span data-show="en">Tripo3D engine only</span></li>
+          <li><span data-show="zh">基础 prompt 输入</span><span data-show="en">Free-form prompt input</span></li>
+          <li><span data-show="zh">异步进度条 + 自动重试</span><span data-show="en">Async progress bar + auto-retry</span></li>
+          <li><span data-show="zh">中英 UI 切换</span><span data-show="en">ZH/EN UI toggle</span></li>
+          <li><span data-show="zh">社区支持（GitHub Issues）</span><span data-show="en">Community support (GitHub)</span></li>
+          <li class="muted"><span data-show="zh">混元 3D / Meshy</span><span data-show="en">Hunyuan 3D / Meshy</span></li>
+          <li class="muted"><span data-show="zh">海外热门预设库</span><span data-show="en">Community-favorite preset library</span></li>
+          <li class="muted"><span data-show="zh">批量生成 · 历史记录</span><span data-show="en">Batch generation · history</span></li>
+        </ul>
+        <a class="plan-cta" href="#cta"><span data-show="zh">下载免费版 →</span><span data-show="en">Download free →</span></a>
+      </div>
+
+      <div class="plan pro">
+        <div class="plan-head">
+          <div class="plan-name"><span class="it">Pro</span></div>
+          <div class="plan-badge"><span data-show="zh">早鸟 50% off</span><span data-show="en">Early bird 50% off</span></div>
+        </div>
+        <div>
+          <div class="plan-price">$29<span class="unit">USD</span></div>
+          <div class="plan-price-sub"><span data-show="zh">终身买断 · 原价 $59</span><span data-show="en">Lifetime · regularly $59</span></div>
+        </div>
+        <ul>
+          <li><span data-show="zh">30+ 海外热门预设（每月新增）</span><span data-show="en">30+ community-favorite presets (updated monthly)</span></li>
+          <li><span data-show="zh">参数面板：面数 / PBR / 风格</span><span data-show="en">Param panel: face count / PBR / style</span></li>
+          <li><span data-show="zh">批量生成（一次跑 10 个 prompt）</span><span data-show="en">Batch mode (run 10 prompts at once)</span></li>
+          <li><span data-show="zh">历史记录 + 一键重生</span><span data-show="en">History panel + one-click regenerate</span></li>
+          <li><span data-show="zh">备用引擎切换（Meshy / 混元 3D）</span><span data-show="en">Switchable engines (Meshy / Hunyuan 3D)</span></li>
+          <li><span data-show="zh">优先邮件支持（48h 响应）</span><span data-show="en">Priority email support (48h)</span></li>
+          <li><span data-show="zh">终身免费版本更新</span><span data-show="en">Lifetime free updates</span></li>
+          <li><span data-show="zh">商用授权（一人 / 一工作室）</span><span data-show="en">Commercial license (single user / studio)</span></li>
+        </ul>
+        <a class="plan-cta" href="#cta"><span data-show="zh">购买 Pro →</span><span data-show="en">Buy Pro →</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FAQ ============== -->
+<section id="faq">
+  <div class="shell">
+    <div class="sec-label">
+      <span class="num">§05</span>
+      <span data-show="zh">常见问题</span><span data-show="en">Questions worth asking</span>
+      <span class="rule"></span>
+    </div>
+
+    <div class="faq-list">
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">我还需要付费给 AI 服务吗？</span><span data-show="en">Do I still pay the AI services?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">是的。插件本身是一次性买断，但生成模型的算力由你自己付给 Tripo3D。Tripo3D 新用户有免费试用额度，足够你判断要不要继续。我们不抽你的 API 流水，也不存你的 Key。</span>
+          <span data-show="en">Yes. The plugin is a one-time purchase, but you pay Tripo3D directly for generation. Tripo3D offers free trial credits for new accounts — enough to decide whether it's worth topping up. We take zero cut of your usage and never store your API key.</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">能在 Unity / Unreal / 3D 打印里直接用吗？</span><span data-show="en">Will the meshes work in Unity / Unreal / 3D printing?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">能。导出格式是标准 .glb（带 PBR 材质与 UV），Unity / Unreal 直接拖进项目；3D 打印导出 .stl 也是 Blender 一键。AI 生成的模型可能需要做 retopo 或减面 — 但形态、比例、贴图都是干净的。</span>
+          <span data-show="en">Yes. Meshes ship as standard .glb with PBR textures and UVs — drag them into Unity or Unreal as-is. Export to .stl from Blender for printing. AI-generated topology may need a retopo pass for production rigging, but silhouette, proportions, and texturing come through clean.</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">生成的模型能商用吗？</span><span data-show="en">Can I use the models commercially?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">能。模型版权归你。Tripo3D 现行 ToS 允许商业用途，覆盖游戏、影视、广告、3D 打印。Pro 版附带书面商用授权，工作室协作更稳。</span>
+          <span data-show="en">Yes. Mesh ownership is yours. Tripo3D's current ToS allows commercial use — games, film, ads, 3D printing. The Pro tier ships with a written commercial license, which makes studio use cleaner.</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">需要哪个版本的 Blender？</span><span data-show="en">Which Blender version do I need?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">Blender 4.0 及以上。我们用了 4.0 的新 API（属性面板、异步 timers）。3.6 LTS 暂不兼容；如果你被卡在 3.6，告诉我们，我们评估补 backport。</span>
+          <span data-show="en">Blender 4.0 or newer. We rely on 4.0's property panel APIs and async timer behaviour. 3.6 LTS isn't supported yet — let us know if you're stuck on 3.6 and we'll consider a backport.</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">生成一个模型多久？质量怎么样？</span><span data-show="en">How long does one mesh take? How good is it?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">通常 30-90 秒，受服务器负载影响。质量上 AI 3D 还不能完全替代人手建模 — 我们的定位是<strong>"概念建模辅助"</strong>：快速出体块、铺资产、做粗模迭代，再用 Blender 自己的工具收尾。直接做最终交付的成功率约 30-50%，做参考的成功率 95%+。</span>
+          <span data-show="en">Typically 30-90s, depending on queue load. AI 3D still isn't a one-click replacement for skilled modeling. We position this as <strong>"concept-modelling assist"</strong> — fast blockouts, asset roughs, ideation. About 30-50% of generations are ship-ready; 95%+ are good enough as a reference you refine in Blender.</span>
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q">
+          <span><span data-show="zh">退款政策？</span><span data-show="en">Refund policy?</span></span>
+          <span class="toggle">+</span>
+        </button>
+        <div class="faq-a">
+          <span data-show="zh">7 天无理由退款。无论你买的是 $29 早鸟还是后续涨价后的 $59，只要 7 天内邮件告诉我们，全额退回，不问理由。</span>
+          <span data-show="en">7-day no-questions-asked refund. Email us within 7 days of purchase for a full refund — early-bird or full price, doesn't matter.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FINAL CTA ============== -->
+<section class="final-cta" id="cta">
+  <div class="shell">
+    <h2>
+      <span data-show="zh">下一个模型，<br><span class="em">先从一句话开始。</span></span>
+      <span data-show="en">Your next mesh<br><span class="em">starts as a sentence.</span></span>
+    </h2>
+    <p>
+      <span data-show="zh">v0.4 公测版已开放下载。商用 Pro 版将于 2026-06-10 上架 Blender Market 与 Gumroad — 留下邮箱锁定早鸟 50% off。</span>
+      <span data-show="en">v0.4 public beta is live. The Pro release lands on Blender Market and Gumroad on June 10, 2026. Drop your email below to lock in the early-bird 50% off.</span>
+    </p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="mailto:hello@aimeshmaker.app?subject=Early%20access">
+        <span data-show="zh">申请抢先体验</span><span data-show="en">Get early access</span>
+        <span class="arrow">→</span>
+      </a>
+      <a class="btn btn-ghost" href="#">
+        <span data-show="zh">下载 v0.4 公测版</span><span data-show="en">Download v0.4 beta</span>
+        <span class="arrow">↓</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer>
+  <div class="shell">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand">AI Mesh Maker</div>
+        <div class="foot-tag">
+          A Blender add-on by TA-F<br>
+          <span data-show="zh">由中国传媒大学 AI Lab 出品</span><span data-show="en">Made at CUC AI Lab</span>
+        </div>
+      </div>
+      <div class="foot-col">
+        <h5><span data-show="zh">产品</span><span data-show="en">Product</span></h5>
+        <a href="#workflow"><span data-show="zh">流程</span><span data-show="en">Workflow</span></a>
+        <a href="#features"><span data-show="zh">功能</span><span data-show="en">Features</span></a>
+        <a href="#presets"><span data-show="zh">预设</span><span data-show="en">Presets</span></a>
+        <a href="#pricing"><span data-show="zh">价格</span><span data-show="en">Pricing</span></a>
+      </div>
+      <div class="foot-col">
+        <h5><span data-show="zh">渠道</span><span data-show="en">Where to buy</span></h5>
+        <a href="#">Blender Market</a>
+        <a href="#">Gumroad</a>
+        <a href="#">Reddit r/blender</a>
+        <a href="#">YouTube · Twitter/X</a>
+      </div>
+      <div class="foot-col">
+        <h5><span data-show="zh">资源</span><span data-show="en">Resources</span></h5>
+        <a href="#"><span data-show="zh">文档</span><span data-show="en">Docs</span></a>
+        <a href="#"><span data-show="zh">更新日志</span><span data-show="en">Changelog</span></a>
+        <a href="#">GitHub</a>
+        <a href="mailto:hello@aimeshmaker.app"><span data-show="zh">联系</span><span data-show="en">Contact</span></a>
+      </div>
+    </div>
+    <div class="foot-bar">
+      <span>© 2026 TA-F · AI Mesh Maker</span>
+      <span>
+        <span data-show="zh">隐私</span><span data-show="en">Privacy</span>
+        <span class="dot">·</span>
+        <span data-show="zh">条款</span><span data-show="en">Terms</span>
+        <span class="dot">·</span>
+        v0.4 BETA · 2026-05-15
+      </span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ---------- Language toggle ----------
+(function(){
+  const root=document.documentElement;
+  const buttons=document.querySelectorAll('[data-set-lang]');
+  function setLang(lang){
+    root.dataset.lang=lang;
+    root.lang=lang==='zh'?'zh-CN':'en';
+    buttons.forEach(b=>b.classList.toggle('active',b.dataset.setLang===lang));
+    try{localStorage.setItem('aim-lang',lang)}catch(e){}
+  }
+  // Init: stored pref > en default. (Chinese available as opt-in toggle.)
+  let saved=null;try{saved=localStorage.getItem('aim-lang')}catch(e){}
+  setLang(saved||'en');
+  buttons.forEach(b=>b.addEventListener('click',()=>setLang(b.dataset.setLang)));
+})();
+
+// ---------- FAQ accordion ----------
+document.querySelectorAll('.faq-item').forEach(item=>{
+  const q=item.querySelector('.faq-q');
+  q.addEventListener('click',()=>{
+    const isOpen=item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(o=>o.classList.remove('open'));
+    if(!isOpen)item.classList.add('open');
+  });
+});
+
+// ---------- Scroll reveals ----------
+const io=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  });
+},{threshold:0.12,rootMargin:'0px 0px -8% 0px'});
+
+// Auto-attach reveal to sections + cards
+document.querySelectorAll('.step,.feat,.market,.preset,.plan,.faq-item').forEach((el,i)=>{
+  el.classList.add('reveal');
+  el.classList.add('reveal-'+((i%5)+1));
+  io.observe(el);
+});
+document.querySelectorAll('.sec-label,.presets-intro').forEach(el=>{
+  el.classList.add('reveal');
+  io.observe(el);
+});
+
+// Already-in-viewport hero elements: trigger immediately
+document.querySelectorAll('.hero .reveal').forEach(el=>el.classList.add('in'));
+</script>
+</body>
+</html>
